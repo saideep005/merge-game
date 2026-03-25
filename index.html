@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Merge Placement Game</title>
+
+<style>
+body {
+    text-align: center;
+    font-family: Arial;
+    background: #eee;
+}
+
+#score {
+    font-size: 22px;
+    margin: 10px;
+}
+
+#board {
+    width: 270px;
+    height: 270px;
+    margin: auto;
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    gap: 5px;
+    background: green;
+    padding: 10px;
+    border-radius: 20px;
+}
+
+.tile {
+    width: 80px;
+    height: 80px;
+    line-height: 80px;
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+    border-radius: 10px;
+    background: black;
+    cursor: pointer;
+}
+
+/* colors */
+.tile1 { background: #f1c40f; }
+.tile2 { background: #3498db; }
+.tile4 { background: #e67e22; }
+.tile8 { background: #e74c3c; }
+.tile16 { background: #9b59b6; }
+.tile32 { background: #1abc9c; }
+.tile64 { background: #2ecc71; }
+.tile128 { background: #34495e; }
+.tile256 { background: #d35400; }
+.tile512 { background: #7f8c8d; }
+.tile1024 { background: #c0392b; }
+
+#next {
+    margin-top: 20px;
+    font-size: 20px;
+}
+
+#nextNum {
+    display: inline-block;
+    padding: 15px 25px;
+    background: #333;
+    color: white;
+    border-radius: 10px;
+    font-size: 22px;
+    margin-left: 10px;
+}
+
+#restartBtn {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    display: none;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>Merge Placement Game</h1>
+<div id="score">Score: 0</div>
+
+<div id="board"></div>
+
+<div id="next">
+Next Number: <span id="nextNum"></span>
+</div>
+
+<button id="restartBtn" onclick="restartGame()">Restart Game</button>
+
+<script>
+let board = Array(9).fill(0);
+let score = 0;
+let nextNumber = getRandom();
+
+const boardDiv = document.getElementById("board");
+
+// 🔥 PROGRESSIVE NUMBER SYSTEM (UP TO 256+)
+function getRandom() {
+    let max = Math.max(...board);
+
+    if (max <= 2) return [1,2][Math.floor(Math.random()*2)];
+
+    let powers = [];
+    let value = 1;
+
+    while (value <= max) {
+        powers.push(value);
+        value *= 2;
+    }
+
+    let start = Math.max(0, powers.length - 4);
+    let options = powers.slice(start);
+
+    return options[Math.floor(Math.random() * options.length)];
+}
+
+// DRAW BOARD
+function draw() {
+    boardDiv.innerHTML = "";
+
+    board.forEach((num, index) => {
+        let tile = document.createElement("div");
+
+        if (num === 0) {
+            tile.className = "tile";
+        } else {
+            tile.className = "tile tile" + num;
+            tile.innerText = num;
+        }
+
+        tile.onclick = () => placeNumber(index);
+        boardDiv.appendChild(tile);
+    });
+
+    document.getElementById("score").innerText = "Score: " + score;
+    document.getElementById("nextNum").innerText = nextNumber;
+}
+
+// PLACE NUMBER
+function placeNumber(index) {
+    if (board[index] !== 0) return;
+
+    board[index] = nextNumber;
+
+    merge(index);
+
+    nextNumber = getRandom();
+
+    draw();
+    checkGameOver();
+}
+
+// MERGE LOGIC
+function merge(index) {
+    let neighbors = getNeighbors(index);
+
+    for (let n of neighbors) {
+        if (board[n] === board[index] && board[index] !== 0) {
+
+            let newVal = board[index] * 2;
+
+            board[index] = newVal;
+            board[n] = 0;
+
+            score += newVal;
+
+            merge(index); // chain merge
+        }
+    }
+}
+
+// NEIGHBORS
+function getNeighbors(i) {
+    let list = [];
+
+    if (i % 3 !== 0) list.push(i - 1);
+    if (i % 3 !== 2) list.push(i + 1);
+    if (i - 3 >= 0) list.push(i - 3);
+    if (i + 3 < 9) list.push(i + 3);
+
+    return list;
+}
+
+// GAME OVER
+function checkGameOver() {
+    if (!board.includes(0)) {
+        document.getElementById("restartBtn").style.display = "block";
+        alert("Game Over! Score: " + score);
+    }
+}
+
+// RESTART
+function restartGame() {
+    board = Array(9).fill(0);
+    score = 0;
+    nextNumber = getRandom();
+    document.getElementById("restartBtn").style.display = "none";
+    draw();
+}
+
+// START
+draw();
+</script>
+
+</body>
+</html>
