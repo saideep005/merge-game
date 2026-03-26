@@ -4,74 +4,70 @@
 <head>
 <title>Merge Placement Game</title>
 
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
 body {
     text-align: center;
     font-family: Arial;
-    background: #eee;
+    background: #111;
+    color: white;
+    margin: 0;
 }
 
-#score {
-    font-size: 22px;
-    margin: 10px;
+#container {
+    max-width: 350px;
+    margin: auto;
+    padding-top: 20px;
+}
+
+#score, #highScore {
+    font-size: 20px;
+    margin: 5px;
 }
 
 #board {
-    width: 270px;
-    height: 270px;
+    width: 90vw;
+    max-width: 300px;
+    aspect-ratio: 1;
     margin: auto;
     display: grid;
-    grid-template-columns: repeat(3, 80px);
-    gap: 5px;
-    background: green;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 6px;
+    background: #222;
     padding: 10px;
-    border-radius: 20px;
+    border-radius: 15px;
 }
 
 .tile {
-    width: 80px;
-    height: 80px;
-    line-height: 80px;
-    font-size: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
     font-weight: bold;
     color: white;
     border-radius: 10px;
-    background: black;
-    cursor: pointer;
+    background: #444;
 }
 
-/* colors */
-.tile1 { background: #f1c40f; }
-.tile2 { background: #3498db; }
-.tile4 { background: #e67e22; }
-.tile8 { background: #e74c3c; }
-.tile16 { background: #9b59b6; }
-.tile32 { background: #1abc9c; }
-.tile64 { background: #2ecc71; }
-.tile128 { background: #34495e; }
-.tile256 { background: #d35400; }
-.tile512 { background: #7f8c8d; }
-.tile1024 { background: #c0392b; }
-
 #next {
-    margin-top: 20px;
-    font-size: 20px;
+    margin-top: 15px;
+    font-size: 18px;
 }
 
 #nextNum {
     display: inline-block;
-    padding: 15px 25px;
+    padding: 10px 20px;
     background: #333;
-    color: white;
     border-radius: 10px;
-    font-size: 22px;
-    margin-left: 10px;
+    margin-left: 8px;
+    min-width: 40px;
 }
 
 #restartBtn {
-    margin-top: 20px;
+    margin-top: 15px;
     padding: 10px 20px;
-    font-size: 16px;
     display: none;
 }
 </style>
@@ -80,56 +76,79 @@ body {
 
 <body>
 
-<h1>Merge Placement Game</h1>
+<div id="container">
+
+<h2>Merge Game</h2>
+
 <div id="score">Score: 0</div>
+<div id="highScore">High Score: 0</div>
 
 <div id="board"></div>
 
 <div id="next">
-Next Number: <span id="nextNum"></span>
+Next: <span id="nextNum"></span>
 </div>
 
-<button id="restartBtn" onclick="restartGame()">Restart Game</button>
+<button id="restartBtn" onclick="restartGame()">Restart</button>
+
+</div>
+
+<audio id="clickSound" src="click.mp3"></audio>
 
 <script>
 let board = Array(9).fill(0);
 let score = 0;
+
+// ✅ HIGH SCORE (SAVED)
+let highScore = localStorage.getItem("highScore") || 0;
+
 let nextNumber = getRandom();
 
 const boardDiv = document.getElementById("board");
 
-// 🔥 PROGRESSIVE NUMBER SYSTEM (UP TO 256+)
+let soundEnabled = false;
+
+document.body.addEventListener("touchstart", () => {
+    soundEnabled = true;
+}, { once: true });
+
+// RANDOM LOGIC
 function getRandom() {
     let max = Math.max(...board);
-
-    if (max <= 2) return [1,2][Math.floor(Math.random()*2)];
 
     let powers = [];
     let value = 1;
 
-    while (value <= max) {
+    while (value <= Math.max(4, max)) {
         powers.push(value);
         value *= 2;
     }
 
-    let start = Math.max(0, powers.length - 4);
-    let options = powers.slice(start);
+    let last = powers.slice(-3);
 
-    return options[Math.floor(Math.random() * options.length)];
+    let r = Math.random();
+
+    if (r < 0.8) {
+        return last[Math.floor(Math.random() * last.length)];
+    }
+
+    return powers[Math.floor(Math.random() * powers.length)];
 }
 
-// DRAW BOARD
+// DRAW
 function draw() {
     boardDiv.innerHTML = "";
 
     board.forEach((num, index) => {
         let tile = document.createElement("div");
 
-        if (num === 0) {
-            tile.className = "tile";
-        } else {
-            tile.className = "tile tile" + num;
+        tile.className = "tile";
+
+        if (num !== 0) {
             tile.innerText = num;
+
+            let hue = (Math.log2(num) * 40) % 360;
+            tile.style.background = `hsl(${hue},70%,50%)`;
         }
 
         tile.onclick = () => placeNumber(index);
@@ -137,12 +156,24 @@ function draw() {
     });
 
     document.getElementById("score").innerText = "Score: " + score;
+    document.getElementById("highScore").innerText = "High Score: " + highScore;
     document.getElementById("nextNum").innerText = nextNumber;
 }
 
-// PLACE NUMBER
+// SOUND
+function playSound() {
+    if (!soundEnabled) return;
+
+    let sound = document.getElementById("clickSound");
+    sound.currentTime = 0;
+    sound.play().catch(() => {});
+}
+
+// PLACE
 function placeNumber(index) {
     if (board[index] !== 0) return;
+
+    playSound();
 
     board[index] = nextNumber;
 
@@ -154,7 +185,7 @@ function placeNumber(index) {
     checkGameOver();
 }
 
-// MERGE LOGIC
+// MERGE
 function merge(index) {
     let neighbors = getNeighbors(index);
 
@@ -168,7 +199,13 @@ function merge(index) {
 
             score += newVal;
 
-            merge(index); // chain merge
+            // ✅ SAVE HIGH SCORE
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem("highScore", highScore);
+            }
+
+            merge(index);
         }
     }
 }
@@ -189,7 +226,9 @@ function getNeighbors(i) {
 function checkGameOver() {
     if (!board.includes(0)) {
         document.getElementById("restartBtn").style.display = "block";
-        alert("Game Over! Score: " + score);
+        setTimeout(() => {
+            alert("Game Over! Score: " + score);
+        }, 100);
     }
 }
 
