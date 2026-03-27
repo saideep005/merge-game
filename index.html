@@ -15,6 +15,13 @@ body {
     text-align: center;
 }
 
+/* FIX FOR MOBILE NOTCH / STATUS BAR */
+#container {
+    padding-top: 40px; /* 🔥 important fix */
+    max-width: 420px;
+    margin: auto;
+}
+
 /* START SCREEN */
 #startScreen {
     position: fixed;
@@ -35,18 +42,12 @@ body {
     color: white;
 }
 
-/* MAIN CONTAINER */
-#container {
-    max-width: 420px;
-    margin: auto;
-    padding: 10px;
-}
-
 /* HEADER */
 #header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 0 10px;
     margin-bottom: 10px;
 }
 
@@ -57,14 +58,15 @@ body {
 
 /* BOARD */
 #board {
-    width: 100%;
+    width: 95%;
+    max-width: 360px;
     aspect-ratio: 1;
+    margin: auto;
     display: grid;
     gap: 8px;
     background: #222;
     padding: 10px;
     border-radius: 20px;
-    margin-bottom: 10px;
 }
 
 /* TILE */
@@ -80,19 +82,19 @@ body {
 
 /* NEXT */
 #nextBox {
-    margin: 10px 0;
+    margin-top: 12px;
     font-size: 16px;
 }
 
 /* BUTTONS */
 #controls {
     display: flex;
-    justify-content: space-around;
-    margin-top: 10px;
+    justify-content: space-evenly;
+    margin-top: 15px;
 }
 
 button {
-    padding: 12px 16px;
+    padding: 12px 18px;
     font-size: 22px;
     border-radius: 12px;
     border: none;
@@ -150,7 +152,6 @@ let highScore = localStorage.getItem("highScore_"+size) || 0;
 let nextNumber = getRandom();
 
 const boardDiv = document.getElementById("board");
-let slideIndex = -1;
 
 function startGame(){
     document.getElementById("startScreen").style.display="none";
@@ -226,7 +227,6 @@ function placeNumber(i){
     if(board[i]!==0)return;
 
     board[i]=nextNumber;
-
     merge(i);
 
     nextNumber=getRandom();
