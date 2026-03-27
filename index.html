@@ -15,15 +15,36 @@ body {
     margin: 0;
 }
 
+/* START SCREEN */
+#startScreen {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+#startScreen button {
+    padding: 15px 30px;
+    font-size: 20px;
+    border-radius: 12px;
+    background: #2ecc71;
+    color: white;
+    animation: bounce 1.5s infinite;
+}
+
+@keyframes bounce {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+
 #container {
     max-width: 350px;
     margin: auto;
     padding-top: 20px;
-}
-
-#score, #highScore {
-    font-size: 20px;
-    margin: 5px;
 }
 
 #board {
@@ -32,8 +53,6 @@ body {
     aspect-ratio: 1;
     margin: auto;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
     gap: 6px;
     background: #222;
     padding: 10px;
@@ -44,31 +63,22 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 20px;
     font-weight: bold;
-    color: white;
     border-radius: 10px;
     background: #444;
+    color: white;
+    transition: transform 0.2s ease;
 }
 
-#next {
-    margin-top: 15px;
-    font-size: 18px;
+.slide {
+    transform: scale(1.1);
 }
 
-#nextNum {
-    display: inline-block;
-    padding: 10px 20px;
-    background: #333;
+button {
+    margin-top: 10px;
+    padding: 10px;
+    font-size: 20px;
     border-radius: 10px;
-    margin-left: 8px;
-    min-width: 40px;
-}
-
-#restartBtn {
-    margin-top: 15px;
-    padding: 10px 20px;
-    display: none;
 }
 </style>
 
@@ -76,46 +86,60 @@ body {
 
 <body>
 
-<div id="container">
+<div id="startScreen">
+    <h1>Numbers Merge Game</h1>
+    <button onclick="startGame()">▶ Play Now</button>
+</div>
 
-<h2>Numbers Merge Game</h2>
+<div id="container" style="display:none;">
+
+<select onchange="changeSize(this.value)">
+<option value="3">3×3</option>
+<option value="4" selected>4×4</option>
+<option value="5">5×5</option>
+</select>
 
 <div id="score">Score: 0</div>
 <div id="highScore">High Score: 0</div>
 
 <div id="board"></div>
 
-<div id="next">
-Next: <span id="nextNum"></span>
-</div>
+<div>Next: <span id="nextNum"></span></div>
 
-<button id="restartBtn" onclick="restartGame()">Restart</button>
+<button onclick="restartGame()">🔄</button> <button onclick="goHome()">🏠</button>
 
 </div>
-
-<audio id="clickSound" src="click.mp3"></audio>
 
 <script>
-let board = Array(9).fill(0);
+let size = 4;
+let board = Array(size*size).fill(0);
 let score = 0;
-
-// ✅ HIGH SCORE (SAVED)
-let highScore = localStorage.getItem("highScore") || 0;
-
+let highScore = localStorage.getItem("highScore_"+size) || 0;
 let nextNumber = getRandom();
 
 const boardDiv = document.getElementById("board");
+let slideIndex = -1;
 
-let soundEnabled = false;
+function startGame(){
+    document.getElementById("startScreen").style.display="none";
+    document.getElementById("container").style.display="block";
+    draw();
+}
 
-document.body.addEventListener("touchstart", () => {
-    soundEnabled = true;
-}, { once: true });
+function goHome(){
+    document.getElementById("container").style.display="none";
+    document.getElementById("startScreen").style.display="flex";
+}
 
-// RANDOM LOGIC
-function getRandom() {
+function changeSize(val){
+    size=parseInt(val);
+    highScore = localStorage.getItem("highScore_"+size) || 0;
+    restartGame();
+}
+
+// 🔥 DIFFICULTY LOGIC (hidden)
+function getRandom(){
     let max = Math.max(...board);
-
     let powers = [];
     let value = 1;
 
@@ -124,125 +148,109 @@ function getRandom() {
         value *= 2;
     }
 
-    let last = powers.slice(-3);
-
     let r = Math.random();
 
-    if (r < 0.8) {
-        return last[Math.floor(Math.random() * last.length)];
+    if (size == 3) {
+        if (r < 0.85) return [1,2,2,4][Math.floor(Math.random()*4)];
+        return powers[Math.floor(Math.random()*Math.min(3, powers.length))];
     }
 
-    return powers[Math.floor(Math.random() * powers.length)];
+    if (size == 4) {
+        let last = powers.slice(-3);
+        if (r < 0.8) return last[Math.floor(Math.random()*last.length)];
+        return powers[Math.floor(Math.random()*powers.length)];
+    }
+
+    if (size == 5) {
+        let last = powers.slice(-2);
+        if (r < 0.6) return last[Math.floor(Math.random()*last.length)];
+        return powers[Math.floor(Math.random()*powers.length)];
+    }
 }
 
-// DRAW
-function draw() {
-    boardDiv.innerHTML = "";
+function draw(){
+    boardDiv.innerHTML="";
+    boardDiv.style.gridTemplateColumns=`repeat(${size},1fr)`;
 
-    board.forEach((num, index) => {
-        let tile = document.createElement("div");
+    board.forEach((num,i)=>{
+        let tile=document.createElement("div");
+        tile.className="tile";
 
-        tile.className = "tile";
-
-        if (num !== 0) {
-            tile.innerText = num;
-
-            let hue = (Math.log2(num) * 40) % 360;
-            tile.style.background = `hsl(${hue},70%,50%)`;
+        if(num!==0){
+            tile.innerText=num;
+            let hue=(Math.log2(num)*40)%360;
+            tile.style.background=`hsl(${hue},70%,50%)`;
         }
 
-        tile.onclick = () => placeNumber(index);
+        if(i===slideIndex){
+            tile.classList.add("slide");
+        }
+
+        tile.onclick=()=>placeNumber(i);
         boardDiv.appendChild(tile);
     });
 
-    document.getElementById("score").innerText = "Score: " + score;
-    document.getElementById("highScore").innerText = "High Score: " + highScore;
-    document.getElementById("nextNum").innerText = nextNumber;
+    document.getElementById("score").innerText="Score: "+score;
+    document.getElementById("highScore").innerText="High Score: "+highScore;
+    document.getElementById("nextNum").innerText=nextNumber;
+
+    slideIndex=-1;
 }
 
-// SOUND
-function playSound() {
-    if (!soundEnabled) return;
+function placeNumber(i){
+    if(board[i]!==0)return;
 
-    let sound = document.getElementById("clickSound");
-    sound.currentTime = 0;
-    sound.play().catch(() => {});
-}
+    board[i]=nextNumber;
+    slideIndex=i;
 
-// PLACE
-function placeNumber(index) {
-    if (board[index] !== 0) return;
+    merge(i);
 
-    playSound();
-
-    board[index] = nextNumber;
-
-    merge(index);
-
-    nextNumber = getRandom();
-
+    nextNumber=getRandom();
     draw();
     checkGameOver();
 }
 
-// MERGE
-function merge(index) {
-    let neighbors = getNeighbors(index);
+function merge(i){
+    let nbs=getNeighbors(i);
+    for(let n of nbs){
+        if(board[n]===board[i] && board[i]!==0){
+            board[i]*=2;
+            board[n]=0;
 
-    for (let n of neighbors) {
-        if (board[n] === board[index] && board[index] !== 0) {
+            slideIndex=i;
 
-            let newVal = board[index] * 2;
-
-            board[index] = newVal;
-            board[n] = 0;
-
-            score += newVal;
-
-            // ✅ SAVE HIGH SCORE
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem("highScore", highScore);
+            score+=board[i];
+            if(score>highScore){
+                highScore=score;
+                localStorage.setItem("highScore_"+size,highScore);
             }
 
-            merge(index);
+            merge(i);
         }
     }
 }
 
-// NEIGHBORS
-function getNeighbors(i) {
-    let list = [];
-
-    if (i % 3 !== 0) list.push(i - 1);
-    if (i % 3 !== 2) list.push(i + 1);
-    if (i - 3 >= 0) list.push(i - 3);
-    if (i + 3 < 9) list.push(i + 3);
-
-    return list;
+function getNeighbors(i){
+    let l=[];
+    if(i%size!==0)l.push(i-1);
+    if(i%size!==size-1)l.push(i+1);
+    if(i-size>=0)l.push(i-size);
+    if(i+size<size*size)l.push(i+size);
+    return l;
 }
 
-// GAME OVER
-function checkGameOver() {
-    if (!board.includes(0)) {
-        document.getElementById("restartBtn").style.display = "block";
-        setTimeout(() => {
-            alert("Game Over! Score: " + score);
-        }, 100);
+function checkGameOver(){
+    if(!board.includes(0)){
+        alert("Game Over! Score: "+score);
     }
 }
 
-// RESTART
-function restartGame() {
-    board = Array(9).fill(0);
-    score = 0;
-    nextNumber = getRandom();
-    document.getElementById("restartBtn").style.display = "none";
+function restartGame(){
+    board=Array(size*size).fill(0);
+    score=0;
+    nextNumber=getRandom();
     draw();
 }
-
-// START
-draw();
 </script>
 
 </body>
