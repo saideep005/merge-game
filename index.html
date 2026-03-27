@@ -4,7 +4,7 @@
 <head>
 <title>Numbers Merge Game</title>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <style>
 body {
@@ -13,6 +13,8 @@ body {
     background: #111;
     color: white;
     margin: 0;
+    user-select: none;
+    touch-action: manipulation;
 }
 
 /* START SCREEN */
@@ -27,58 +29,93 @@ body {
     flex-direction: column;
 }
 
+#startScreen h1 {
+    font-size: 26px;
+}
+
 #startScreen button {
-    padding: 15px 30px;
-    font-size: 20px;
-    border-radius: 12px;
+    padding: 16px 40px;
+    font-size: 22px;
+    border-radius: 15px;
     background: #2ecc71;
     color: white;
+    border: none;
     animation: bounce 1.5s infinite;
 }
 
 @keyframes bounce {
     0%,100% { transform: translateY(0); }
-    50% { transform: translateY(-15px); }
+    50% { transform: translateY(-12px); }
 }
 
+/* MAIN */
 #container {
-    max-width: 350px;
+    max-width: 400px;
     margin: auto;
-    padding-top: 20px;
+    padding: 10px;
 }
 
+/* TOP BAR */
+#topBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+#score, #highScore {
+    font-size: 16px;
+}
+
+/* BOARD */
 #board {
-    width: 90vw;
-    max-width: 300px;
+    width: 95vw;
+    max-width: 360px;
     aspect-ratio: 1;
     margin: auto;
     display: grid;
-    gap: 6px;
+    gap: 8px;
     background: #222;
     padding: 10px;
-    border-radius: 15px;
+    border-radius: 20px;
 }
 
+/* TILES */
 .tile {
     display: flex;
     justify-content: center;
     align-items: center;
     font-weight: bold;
-    border-radius: 10px;
+    border-radius: 12px;
     background: #444;
     color: white;
-    transition: transform 0.2s ease;
+    font-size: 18px;
+    transition: transform 0.15s ease;
 }
 
 .slide {
     transform: scale(1.1);
 }
 
-button {
+/* CONTROLS */
+#controls {
+    display: flex;
+    justify-content: space-between;
     margin-top: 10px;
-    padding: 10px;
+}
+
+button {
+    padding: 12px 18px;
     font-size: 20px;
-    border-radius: 10px;
+    border-radius: 12px;
+    border: none;
+}
+
+/* SELECT */
+select {
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 14px;
 }
 </style>
 
@@ -93,20 +130,27 @@ button {
 
 <div id="container" style="display:none;">
 
+<div id="topBar">
 <select onchange="changeSize(this.value)">
 <option value="3">3×3</option>
 <option value="4" selected>4×4</option>
 <option value="5">5×5</option>
 </select>
 
+<div>
 <div id="score">Score: 0</div>
 <div id="highScore">High Score: 0</div>
+</div>
+</div>
 
 <div id="board"></div>
 
 <div>Next: <span id="nextNum"></span></div>
 
-<button onclick="restartGame()">🔄</button> <button onclick="goHome()">🏠</button>
+<div id="controls">
+<button onclick="restartGame()">🔄</button>
+<button onclick="goHome()">🏠</button>
+</div>
 
 </div>
 
@@ -137,7 +181,6 @@ function changeSize(val){
     restartGame();
 }
 
-// 🔥 DIFFICULTY LOGIC (hidden)
 function getRandom(){
     let max = Math.max(...board);
     let powers = [];
