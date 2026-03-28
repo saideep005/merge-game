@@ -12,13 +12,8 @@ html, body {
     font-family: Arial;
     overflow: hidden;
 }
+body { touch-action: manipulation; }
 
-/* 🔥 ADD THIS LINE ONLY */
-body {
-    touch-action: manipulation;
-}
-
-/* CENTER EVERYTHING */
 .wrapper {
     display: flex;
     justify-content: center;
@@ -26,7 +21,6 @@ body {
     height: 100%;
 }
 
-/* GAME CONTAINER */
 .container {
     width: 95vw;
     max-width: 420px;
@@ -34,20 +28,17 @@ body {
     color: white;
 }
 
-/* PLAY BUTTON */
 .play-btn {
     padding: 15px;
     font-size: 18px;
     animation: pulse 1.5s infinite;
 }
-
 @keyframes pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.1); }
     100% { transform: scale(1); }
 }
 
-/* GRID */
 .grid {
     display: grid;
     gap: 8px;
@@ -56,7 +47,6 @@ body {
     touch-action: none;
 }
 
-/* CELLS */
 .cell {
     background: white;
     border-radius: 10px;
@@ -64,31 +54,18 @@ body {
     justify-content: center;
     align-items: center;
     aspect-ratio: 1/1;
-
     font-weight: bold;
-    font-size: clamp(16px, 5vw, 26px);
-    transition: transform 0.2s;
+    font-size: clamp(28px, 8vw, 48px);
 }
 
-/* MERGE ANIMATION */
-.merge {
-    animation: pop 0.2s ease;
-}
-
-@keyframes pop {
-    0% { transform: scale(0.6); }
-    100% { transform: scale(1); }
-}
-
-/* COLORS */
 .n2{color:red;} .n4{color:orange;} .n8{color:gold;}
 .n16{color:green;} .n32{color:cyan;} .n64{color:blue;}
 .n128{color:purple;} .n256{color:pink;} .n512{color:lime;}
 .n1024{color:yellow;} .n2048{color:black;}
 
 button {
-    margin: 4px;
-    padding: 8px;
+    margin: 5px;
+    padding: 10px;
     border-radius: 6px;
     border: none;
     font-weight: bold;
@@ -103,7 +80,15 @@ button {
 <!-- HOME -->
 <div id="home" class="container">
     <h1>Number Merge Game</h1>
-    <button class="play-btn" onclick="showGame()">▶ Play Now</button>
+    <button class="play-btn" onclick="showMatrix()">▶ Play Now</button>
+</div>
+
+<!-- MATRIX SELECT -->
+<div id="matrix" class="container" style="display:none;">
+    <h2>Select Grid</h2>
+    <button onclick="startGame(3)">3×3</button>
+    <button onclick="startGame(4)">4×4</button>
+    <button onclick="startGame(5)">5×5</button>
 </div>
 
 <!-- GAME -->
@@ -115,14 +100,8 @@ High: <span id="highScore">0</span>
 </h3>
 
 <div>
-    <button onclick="startGame(3)">3×3</button>
-    <button onclick="startGame(4)">4×4</button>
-    <button onclick="startGame(5)">5×5</button>
-</div>
-
-<div>
-    <button onclick="init()">🔁 </button>
-    <button onclick="goHome()">🏠 </button>
+    <button onclick="init()">🔁</button>
+    <button onclick="goHome()">🏠</button>
 </div>
 
 <div class="grid" id="grid"></div>
@@ -133,71 +112,49 @@ High: <span id="highScore">0</span>
 
 <script>
 
-// 🔥 ADD ONLY THIS BLOCK (ZOOM FIX)
-document.addEventListener('gesturestart', function(e) {
-    e.preventDefault();
-});
+// FIX: correct references
+const scoreEl = document.getElementById("score");
+const highScoreEl = document.getElementById("highScore");
 
-document.addEventListener('dblclick', function(e) {
-    e.preventDefault();
-});
-
-document.addEventListener('touchmove', function(e) {
-    if (e.scale !== undefined && e.scale !== 1) {
-        e.preventDefault();
-    }
-}, { passive: false });
-
-
-// VERSION RESET
-const GAME_VERSION = "v4";
-if (localStorage.getItem("version") !== GAME_VERSION) {
-    localStorage.clear();
-    localStorage.setItem("version", GAME_VERSION);
+// FLOW
+function showMatrix(){
+    home.style.display="none";
+    matrix.style.display="block";
 }
 
-let size = 5;
-let board = [];
-let score = 0;
-
-const grid = document.getElementById("grid");
-
-// HOME
-function showGame(){
-    document.getElementById("home").style.display="none";
-    document.getElementById("game").style.display="block";
-    startGame(5);
-}
-
-function goHome(){
-    document.getElementById("home").style.display="block";
-    document.getElementById("game").style.display="none";
-}
-
-// HIGH SCORE
-function getKey(){ return "highScore_" + size; }
-function loadHigh(){ return localStorage.getItem(getKey()) || 0; }
-function saveHigh(v){ localStorage.setItem(getKey(), v); }
-
-// START
 function startGame(s){
-    size = s;
+    size=s;
+    matrix.style.display="none";
+    game.style.display="block";
     init();
 }
 
+function goHome(){
+    game.style.display="none";
+    matrix.style.display="none";
+    home.style.display="block";
+}
+
+// GAME DATA
+let size=5, board=[], score=0;
+const grid=document.getElementById("grid");
+
+// HIGH SCORE
+function getKey(){ return "highScore_"+size; }
+function loadHigh(){ return localStorage.getItem(getKey())||0; }
+function saveHigh(v){ localStorage.setItem(getKey(),v); }
+
 // INIT
 function init(){
-    grid.style.gridTemplateColumns = `repeat(${size},1fr)`;
-    board = Array(size).fill().map(()=>Array(size).fill(0));
-    score = 0;
+    grid.style.gridTemplateColumns=`repeat(${size},1fr)`;
+    board=Array(size).fill().map(()=>Array(size).fill(0));
+    score=0;
     addTile(); addTile();
     draw();
 }
 
 // TILE
-function getNewTile(){
-    return Math.random()<0.9?2:4;
-}
+function getNewTile(){ return Math.random()<0.9?2:4; }
 
 // ADD TILE
 function addTile(){
@@ -207,7 +164,7 @@ function addTile(){
             if(board[i][j]==0) empty.push({i,j});
         }
     }
-    if(empty.length==0) return;
+    if(!empty.length) return;
     let s=empty[Math.floor(Math.random()*empty.length)];
     board[s.i][s.j]=getNewTile();
 }
@@ -215,7 +172,6 @@ function addTile(){
 // DRAW
 function draw(){
     grid.innerHTML="";
-
     board.flat().forEach(val=>{
         let c=document.createElement("div");
         c.className="cell n"+val;
@@ -223,14 +179,23 @@ function draw(){
         grid.appendChild(c);
     });
 
-    document.getElementById("score").textContent=score;
+    scoreEl.textContent=score;
 
-    let high = loadHigh();
-    if(score > high){
-        high = score;
-        saveHigh(high);
+    let high=loadHigh();
+    if(score>high){ high=score; saveHigh(high); }
+    highScoreEl.textContent=high;
+}
+
+// GAME OVER
+function isGameOver(){
+    for(let i=0;i<size;i++){
+        for(let j=0;j<size;j++){
+            if(board[i][j]===0) return false;
+            if(j<size-1 && board[i][j]===board[i][j+1]) return false;
+            if(i<size-1 && board[i][j]===board[i+1][j]) return false;
+        }
     }
-    document.getElementById("highScore").textContent = high;
+    return true;
 }
 
 // MERGE
@@ -256,7 +221,7 @@ function moveLeft(){
         if(board[i].toString()!=n.toString()) moved=true;
         board[i]=n;
     }
-    if(moved){addTile();draw();}
+    if(moved){ addTile(); draw(); checkGameOver(); }
 }
 
 function moveRight(){
@@ -266,7 +231,7 @@ function moveRight(){
         if(board[i].toString()!=n.toString()) moved=true;
         board[i]=n;
     }
-    if(moved){addTile();draw();}
+    if(moved){ addTile(); draw(); checkGameOver(); }
 }
 
 function moveUp(){
@@ -279,7 +244,7 @@ function moveUp(){
             board[i][j]=n[i];
         }
     }
-    if(moved){addTile();draw();}
+    if(moved){ addTile(); draw(); checkGameOver(); }
 }
 
 function moveDown(){
@@ -292,31 +257,30 @@ function moveDown(){
             board[i][j]=n[i];
         }
     }
-    if(moved){addTile();draw();}
+    if(moved){ addTile(); draw(); checkGameOver(); }
 }
 
-// POINTER SWIPE
+// GAME OVER ALERT
+function checkGameOver(){
+    if(isGameOver()){
+        setTimeout(()=> alert("Game Over 😢"),100);
+    }
+}
+
+// SWIPE
 let startX=0,startY=0,isDown=false;
-
 grid.addEventListener("pointerdown",e=>{
-    isDown=true;
-    startX=e.clientX;
-    startY=e.clientY;
+    isDown=true; startX=e.clientX; startY=e.clientY;
 });
-
 grid.addEventListener("pointerup",e=>{
     if(!isDown) return;
     isDown=false;
-
-    let dx=e.clientX-startX;
-    let dy=e.clientY-startY;
-
+    let dx=e.clientX-startX, dy=e.clientY-startY;
     let min=30;
-
     if(Math.abs(dx)>Math.abs(dy)){
         if(dx>min) moveRight();
         else if(dx<-min) moveLeft();
-    }else{
+    } else {
         if(dy>min) moveDown();
         else if(dy<-min) moveUp();
     }
