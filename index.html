@@ -1,278 +1,327 @@
 <!DOCTYPE html>
-
 <html>
 <head>
-<title>Numbers Merge Game</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Number Merge Game</title>
 
 <style>
-body {
+html, body {
     margin: 0;
-    font-family: Arial;
-    background: #111;
-    color: white;
-    text-align: center;
-}
-
-/* FIX FOR MOBILE NOTCH / STATUS BAR */
-#container {
-    padding-top: 40px; /* 🔥 important fix */
-    max-width: 420px;
-    margin: auto;
-}
-
-/* START SCREEN */
-#startScreen {
-    position: fixed;
-    width: 100%;
     height: 100%;
-    background: #111;
+    background: maroon;
+    font-family: Arial;
+    overflow: hidden;
+}
+
+/* 🔥 ADD THIS LINE ONLY */
+body {
+    touch-action: manipulation;
+}
+
+/* CENTER EVERYTHING */
+.wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-direction: column;
+    height: 100%;
 }
 
-#startScreen button {
-    padding: 15px 30px;
-    font-size: 20px;
-    border-radius: 12px;
-    background: #2ecc71;
+/* GAME CONTAINER */
+.container {
+    width: 95vw;
+    max-width: 420px;
+    text-align: center;
     color: white;
 }
 
-/* HEADER */
-#header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 10px;
-    margin-bottom: 10px;
+/* PLAY BUTTON */
+.play-btn {
+    padding: 15px;
+    font-size: 18px;
+    animation: pulse 1.5s infinite;
 }
 
-#scoreBox {
-    text-align: right;
-    font-size: 14px;
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
 
-/* BOARD */
-#board {
-    width: 95%;
-    max-width: 360px;
-    aspect-ratio: 1;
-    margin: auto;
+/* GRID */
+.grid {
     display: grid;
     gap: 8px;
-    background: #222;
-    padding: 10px;
-    border-radius: 20px;
+    width: 100%;
+    margin-top: 10px;
+    touch-action: none;
 }
 
-/* TILE */
-.tile {
+/* CELLS */
+.cell {
+    background: white;
+    border-radius: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
-    border-radius: 12px;
-    background: #444;
+    aspect-ratio: 1/1;
+
     font-weight: bold;
-    font-size: 18px;
+    font-size: clamp(16px, 5vw, 26px);
+    transition: transform 0.2s;
 }
 
-/* NEXT */
-#nextBox {
-    margin-top: 12px;
-    font-size: 16px;
+/* MERGE ANIMATION */
+.merge {
+    animation: pop 0.2s ease;
 }
 
-/* BUTTONS */
-#controls {
-    display: flex;
-    justify-content: space-evenly;
-    margin-top: 15px;
+@keyframes pop {
+    0% { transform: scale(0.6); }
+    100% { transform: scale(1); }
 }
+
+/* COLORS */
+.n2{color:red;} .n4{color:orange;} .n8{color:gold;}
+.n16{color:green;} .n32{color:cyan;} .n64{color:blue;}
+.n128{color:purple;} .n256{color:pink;} .n512{color:lime;}
+.n1024{color:yellow;} .n2048{color:black;}
 
 button {
-    padding: 12px 18px;
-    font-size: 22px;
-    border-radius: 12px;
+    margin: 4px;
+    padding: 8px;
+    border-radius: 6px;
     border: none;
-}
-
-/* SELECT */
-select {
-    padding: 6px;
-    border-radius: 8px;
+    font-weight: bold;
 }
 </style>
-
 </head>
 
 <body>
 
-<div id="startScreen">
-    <h2>Numbers Merge Game</h2>
-    <button onclick="startGame()">▶ Play Now</button>
+<div class="wrapper">
+
+<!-- HOME -->
+<div id="home" class="container">
+    <h1>Number Merge Game</h1>
+    <button class="play-btn" onclick="showGame()">▶ Play Now</button>
 </div>
 
-<div id="container" style="display:none;">
+<!-- GAME -->
+<div id="game" class="container" style="display:none;">
 
-<div id="header">
-<select onchange="changeSize(this.value)">
-<option value="3">3×3</option>
-<option value="4" selected>4×4</option>
-<option value="5">5×5</option>
-</select>
+<h3>
+Score: <span id="score">0</span> |
+High: <span id="highScore">0</span>
+</h3>
 
-<div id="scoreBox">
-<div id="score">Score: 0</div>
-<div id="highScore">High Score: 0</div>
-</div>
-</div>
-
-<div id="board"></div>
-
-<div id="nextBox">
-Next: <span id="nextNum"></span>
+<div>
+    <button onclick="startGame(3)">3×3</button>
+    <button onclick="startGame(4)">4×4</button>
+    <button onclick="startGame(5)">5×5</button>
 </div>
 
-<div id="controls">
-<button onclick="restartGame()">🔄</button>
-<button onclick="goHome()">🏠</button>
+<div>
+    <button onclick="init()">🔁 </button>
+    <button onclick="goHome()">🏠 </button>
+</div>
+
+<div class="grid" id="grid"></div>
+
 </div>
 
 </div>
 
 <script>
-let size = 4;
-let board = Array(size*size).fill(0);
+
+// 🔥 ADD ONLY THIS BLOCK (ZOOM FIX)
+document.addEventListener('gesturestart', function(e) {
+    e.preventDefault();
+});
+
+document.addEventListener('dblclick', function(e) {
+    e.preventDefault();
+});
+
+document.addEventListener('touchmove', function(e) {
+    if (e.scale !== undefined && e.scale !== 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+
+// VERSION RESET
+const GAME_VERSION = "v4";
+if (localStorage.getItem("version") !== GAME_VERSION) {
+    localStorage.clear();
+    localStorage.setItem("version", GAME_VERSION);
+}
+
+let size = 5;
+let board = [];
 let score = 0;
-let highScore = localStorage.getItem("highScore_"+size) || 0;
-let nextNumber = getRandom();
 
-const boardDiv = document.getElementById("board");
+const grid = document.getElementById("grid");
 
-function startGame(){
-    document.getElementById("startScreen").style.display="none";
-    document.getElementById("container").style.display="block";
-    draw();
+// HOME
+function showGame(){
+    document.getElementById("home").style.display="none";
+    document.getElementById("game").style.display="block";
+    startGame(5);
 }
 
 function goHome(){
-    document.getElementById("container").style.display="none";
-    document.getElementById("startScreen").style.display="flex";
+    document.getElementById("home").style.display="block";
+    document.getElementById("game").style.display="none";
 }
 
-function changeSize(val){
-    size=parseInt(val);
-    highScore = localStorage.getItem("highScore_"+size) || 0;
-    restartGame();
+// HIGH SCORE
+function getKey(){ return "highScore_" + size; }
+function loadHigh(){ return localStorage.getItem(getKey()) || 0; }
+function saveHigh(v){ localStorage.setItem(getKey(), v); }
+
+// START
+function startGame(s){
+    size = s;
+    init();
 }
 
-function getRandom(){
-    let max = Math.max(...board);
-    let powers = [];
-    let value = 1;
-
-    while (value <= Math.max(4, max)) {
-        powers.push(value);
-        value *= 2;
-    }
-
-    let r = Math.random();
-
-    if (size == 3) {
-        if (r < 0.85) return [1,2,2,4][Math.floor(Math.random()*4)];
-        return powers[Math.floor(Math.random()*Math.min(3, powers.length))];
-    }
-
-    if (size == 4) {
-        let last = powers.slice(-3);
-        if (r < 0.8) return last[Math.floor(Math.random()*last.length)];
-        return powers[Math.floor(Math.random()*powers.length)];
-    }
-
-    if (size == 5) {
-        let last = powers.slice(-2);
-        if (r < 0.6) return last[Math.floor(Math.random()*last.length)];
-        return powers[Math.floor(Math.random()*powers.length)];
-    }
+// INIT
+function init(){
+    grid.style.gridTemplateColumns = `repeat(${size},1fr)`;
+    board = Array(size).fill().map(()=>Array(size).fill(0));
+    score = 0;
+    addTile(); addTile();
+    draw();
 }
 
-function draw(){
-    boardDiv.innerHTML="";
-    boardDiv.style.gridTemplateColumns=`repeat(${size},1fr)`;
+// TILE
+function getNewTile(){
+    return Math.random()<0.9?2:4;
+}
 
-    board.forEach((num,i)=>{
-        let tile=document.createElement("div");
-        tile.className="tile";
-
-        if(num!==0){
-            tile.innerText=num;
-            let hue=(Math.log2(num)*40)%360;
-            tile.style.background=`hsl(${hue},70%,50%)`;
+// ADD TILE
+function addTile(){
+    let empty=[];
+    for(let i=0;i<size;i++){
+        for(let j=0;j<size;j++){
+            if(board[i][j]==0) empty.push({i,j});
         }
+    }
+    if(empty.length==0) return;
+    let s=empty[Math.floor(Math.random()*empty.length)];
+    board[s.i][s.j]=getNewTile();
+}
 
-        tile.onclick=()=>placeNumber(i);
-        boardDiv.appendChild(tile);
+// DRAW
+function draw(){
+    grid.innerHTML="";
+
+    board.flat().forEach(val=>{
+        let c=document.createElement("div");
+        c.className="cell n"+val;
+        c.textContent=val||"";
+        grid.appendChild(c);
     });
 
-    document.getElementById("score").innerText="Score: "+score;
-    document.getElementById("highScore").innerText="High Score: "+highScore;
-    document.getElementById("nextNum").innerText=nextNumber;
+    document.getElementById("score").textContent=score;
+
+    let high = loadHigh();
+    if(score > high){
+        high = score;
+        saveHigh(high);
+    }
+    document.getElementById("highScore").textContent = high;
 }
 
-function placeNumber(i){
-    if(board[i]!==0)return;
-
-    board[i]=nextNumber;
-    merge(i);
-
-    nextNumber=getRandom();
-    draw();
-    checkGameOver();
-}
-
-function merge(i){
-    let nbs=getNeighbors(i);
-    for(let n of nbs){
-        if(board[n]===board[i] && board[i]!==0){
-            board[i]*=2;
-            board[n]=0;
-
-            score+=board[i];
-            if(score>highScore){
-                highScore=score;
-                localStorage.setItem("highScore_"+size,highScore);
-            }
-
-            merge(i);
+// MERGE
+function merge(row){
+    let arr=row.filter(x=>x!=0);
+    for(let i=0;i<arr.length-1;i++){
+        if(arr[i]==arr[i+1]){
+            arr[i]*=2;
+            score+=arr[i];
+            arr[i+1]=0;
         }
     }
+    arr=arr.filter(x=>x!=0);
+    while(arr.length<size) arr.push(0);
+    return arr;
 }
 
-function getNeighbors(i){
-    let l=[];
-    if(i%size!==0)l.push(i-1);
-    if(i%size!==size-1)l.push(i+1);
-    if(i-size>=0)l.push(i-size);
-    if(i+size<size*size)l.push(i+size);
-    return l;
-}
-
-function checkGameOver(){
-    if(!board.includes(0)){
-        alert("Game Over! Score: "+score);
+// MOVES
+function moveLeft(){
+    let moved=false;
+    for(let i=0;i<size;i++){
+        let n=merge(board[i]);
+        if(board[i].toString()!=n.toString()) moved=true;
+        board[i]=n;
     }
+    if(moved){addTile();draw();}
 }
 
-function restartGame(){
-    board=Array(size*size).fill(0);
-    score=0;
-    nextNumber=getRandom();
-    draw();
+function moveRight(){
+    let moved=false;
+    for(let i=0;i<size;i++){
+        let n=merge([...board[i]].reverse()).reverse();
+        if(board[i].toString()!=n.toString()) moved=true;
+        board[i]=n;
+    }
+    if(moved){addTile();draw();}
 }
+
+function moveUp(){
+    let moved=false;
+    for(let j=0;j<size;j++){
+        let col=board.map(r=>r[j]);
+        let n=merge(col);
+        for(let i=0;i<size;i++){
+            if(board[i][j]!=n[i]) moved=true;
+            board[i][j]=n[i];
+        }
+    }
+    if(moved){addTile();draw();}
+}
+
+function moveDown(){
+    let moved=false;
+    for(let j=0;j<size;j++){
+        let col=board.map(r=>r[j]).reverse();
+        let n=merge(col).reverse();
+        for(let i=0;i<size;i++){
+            if(board[i][j]!=n[i]) moved=true;
+            board[i][j]=n[i];
+        }
+    }
+    if(moved){addTile();draw();}
+}
+
+// POINTER SWIPE
+let startX=0,startY=0,isDown=false;
+
+grid.addEventListener("pointerdown",e=>{
+    isDown=true;
+    startX=e.clientX;
+    startY=e.clientY;
+});
+
+grid.addEventListener("pointerup",e=>{
+    if(!isDown) return;
+    isDown=false;
+
+    let dx=e.clientX-startX;
+    let dy=e.clientY-startY;
+
+    let min=30;
+
+    if(Math.abs(dx)>Math.abs(dy)){
+        if(dx>min) moveRight();
+        else if(dx<-min) moveLeft();
+    }else{
+        if(dy>min) moveDown();
+        else if(dy<-min) moveUp();
+    }
+});
+
 </script>
 
 </body>
