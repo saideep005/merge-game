@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -33,6 +34,7 @@ body { touch-action: manipulation; }
     font-size: 18px;
     animation: pulse 1.5s infinite;
 }
+
 @keyframes pulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.1); }
@@ -70,28 +72,59 @@ button {
     border: none;
     font-weight: bold;
 }
+
+/* ⚙️ SETTINGS */
+.settings {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.popup {
+    display: none;
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    background: white;
+    color: black;
+    padding: 10px;
+    border-radius: 10px;
+}
 </style>
+
 </head>
 
 <body>
 
+<!-- 🎵 MUSIC -->
+
+<audio id="bgMusic" loop>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<!-- ⚙️ SETTINGS BUTTON -->
+
+<div class="settings">
+    <button onclick="toggleMenu()">⚙️</button>
+    <div id="menu" class="popup">
+        <button onclick="toggleMute()">🔇 Mute / Unmute</button>
+    </div>
+</div>
+
 <div class="wrapper">
 
-<!-- HOME -->
 <div id="home" class="container">
     <h1>Number Merge Game</h1>
     <button class="play-btn" onclick="showMatrix()">▶ Play Now</button>
 </div>
 
-<!-- MATRIX SELECT -->
 <div id="matrix" class="container" style="display:none;">
     <h2>Select Grid</h2>
     <button onclick="startGame(3)">3×3</button>
     <button onclick="startGame(4)">4×4</button>
-    <button onclick="startGame(5)">5×5</button>
+    
 </div>
 
-<!-- GAME -->
 <div id="game" class="container" style="display:none;">
 
 <h3>
@@ -112,11 +145,26 @@ High: <span id="highScore">0</span>
 
 <script>
 
-// FIX: correct references
 const scoreEl = document.getElementById("score");
 const highScoreEl = document.getElementById("highScore");
 
-// FLOW
+// 🎵 PLAY MUSIC
+document.addEventListener("click", function () {
+    let music = document.getElementById("bgMusic");
+    music.play().catch(()=>{});
+}, { once: true });
+
+// ⚙️ SETTINGS LOGIC
+function toggleMenu(){
+    let m = document.getElementById("menu");
+    m.style.display = (m.style.display === "block") ? "none" : "block";
+}
+
+function toggleMute(){
+    let music = document.getElementById("bgMusic");
+    music.muted = !music.muted;
+}
+
 function showMatrix(){
     home.style.display="none";
     matrix.style.display="block";
@@ -135,26 +183,40 @@ function goHome(){
     home.style.display="block";
 }
 
-// GAME DATA
 let size=5, board=[], score=0;
 const grid=document.getElementById("grid");
 
-// HIGH SCORE
 function getKey(){ return "highScore_"+size; }
 function loadHigh(){ return localStorage.getItem(getKey())||0; }
 function saveHigh(v){ localStorage.setItem(getKey(),v); }
+
+// 🔥 TILE GENERATION (UNCHANGED)
+let lastTiles = [];
+
+function getNewTile(){
+    let value;
+
+    if(lastTiles.length >= 3 && lastTiles.slice(-3).every(v => v === 2)){
+        value = 4;
+    } else {
+        value = Math.random() < 0.6 ? 2 : 4;
+    }
+
+    lastTiles.push(value);
+    if(lastTiles.length > 5) lastTiles.shift();
+
+    return value;
+}
 
 // INIT
 function init(){
     grid.style.gridTemplateColumns=`repeat(${size},1fr)`;
     board=Array(size).fill().map(()=>Array(size).fill(0));
     score=0;
+    lastTiles = [];
     addTile(); addTile();
     draw();
 }
-
-// TILE
-function getNewTile(){ return Math.random()<0.9?2:4; }
 
 // ADD TILE
 function addTile(){
